@@ -1,28 +1,73 @@
+import { useState } from "react";
+import HomePage from "@/pages/HomePage";
+import QuizPage from "@/pages/QuizPage";
+import ResultsPage from "@/pages/ResultsPage";
+import LeaderboardPage from "@/pages/LeaderboardPage";
+import AboutPage from "@/pages/AboutPage";
+import SharePage from "@/pages/SharePage";
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+export type Page = "home" | "quiz" | "results" | "leaderboard" | "about" | "share";
 
-const queryClient = new QueryClient();
+export interface QuizResult {
+  score: number;
+  total: number;
+  answers: { questionId: number; correct: boolean; timeSpent: number; selectedOption: number }[];
+  nickname: string;
+  finishedAt: Date;
+}
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+export default function App() {
+  const [page, setPage] = useState<Page>("home");
+  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
 
-export default App;
+  const navigate = (p: Page) => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setPage(p);
+  };
+
+  return (
+    <div className="min-h-screen">
+      {page === "home" && (
+        <HomePage
+          onStart={() => navigate("quiz")}
+          onLeaderboard={() => navigate("leaderboard")}
+          onAbout={() => navigate("about")}
+        />
+      )}
+      {page === "quiz" && (
+        <QuizPage
+          onFinish={(result) => { setQuizResult(result); navigate("results"); }}
+          onBack={() => navigate("home")}
+        />
+      )}
+      {page === "results" && quizResult && (
+        <ResultsPage
+          result={quizResult}
+          onShare={() => navigate("share")}
+          onLeaderboard={() => navigate("leaderboard")}
+          onRetry={() => navigate("quiz")}
+          onHome={() => navigate("home")}
+        />
+      )}
+      {page === "leaderboard" && (
+        <LeaderboardPage
+          onBack={() => navigate("home")}
+          currentResult={quizResult}
+        />
+      )}
+      {page === "about" && (
+        <AboutPage
+          onBack={() => navigate("home")}
+          onStart={() => navigate("quiz")}
+        />
+      )}
+      {page === "share" && quizResult && (
+        <SharePage
+          result={quizResult}
+          onBack={() => navigate("results")}
+          onHome={() => navigate("home")}
+        />
+      )}
+    </div>
+  );
+}
